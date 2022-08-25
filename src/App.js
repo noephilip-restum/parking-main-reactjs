@@ -77,7 +77,7 @@ const App = () => {
   };
 
   const park = (size, ent) => {
-    let entrance = entrance.find((o) => o.name === ent.toUpperCase());
+    let entranceSlot = entrance.find((o) => o.name === ent.toUpperCase());
     let nrow = -1,
       ncol = -1;
     let distance = 9999;
@@ -90,7 +90,8 @@ const App = () => {
           if (size <= p.psize.value) {
             // Check if vehicle fits in parking slot
             let computedDistance =
-              Math.abs(entrance.row - p.row) + Math.abs(entrance.col - p.col);
+              Math.abs(entranceSlot.row - p.row) +
+              Math.abs(entranceSlot.col - p.col);
             if (distance > computedDistance && !p.occupied) {
               distance = computedDistance;
               nrow = i;
@@ -123,8 +124,8 @@ const App = () => {
   };
 
   const confirmButton = () => {
-    park();
-    console.log("HERE");
+    park(input.vehicleSize, input.entryPoint);
+    console.log("HERE", parkSlot);
   };
 
   const handleOnChange = (event) => {
@@ -371,12 +372,17 @@ const App = () => {
 
   return (
     <div className="App">
-      {input.option === "" ? (
+      {!input.option ? (
         <InitialScreen />
-      ) : input.option === "park" && !input.vehicleSize ? (
+      ) : input.option && !input.vehicleSize ? (
         <VehicleSizeInput />
-      ) : input.vehicleSize ? (
+      ) : input.option && input.vehicleSize && !input.entryPoint ? (
         <EntranceInput />
+      ) : input.option && input.vehicleSize && input.entryPoint ? (
+        <>
+          <h1>"Successfully Parked!"</h1>
+          <button onClick={confirmButton}>Enter</button>
+        </>
       ) : (
         <></>
       )}
