@@ -7,6 +7,8 @@ const App = () => {
     option: "",
     vehicleSize: "",
     entryPoint: "",
+    unpark: "",
+    steps: 0,
   });
   const [maxColumns, setMaxColumns] = useState(8);
   const [maxRows, setMaxRows] = useState(5);
@@ -123,16 +125,102 @@ const App = () => {
     }
   };
 
-  const confirmButton = () => {
-    park(input.vehicleSize, input.entryPoint);
+  const unpark = (row, col) => {
+    let p = parkSlot[row][col];
+    let diff = new Date() - p.start;
+
+    let totalPayable = compute(p.psize.value, diff);
+
+    console.log(`Total charges: P ${totalPayable}`);
+    // Reset parking slot
+    Object.assign(parkSlot[row][col], {
+      occupied: false,
+      vsize: null,
+      start: null,
+    });
+    alert(`Vehicle Unparked!\nTotal charges: P ${totalPayable}`);
+  };
+
+  const compute = (size, totalTime) => {
+    let remainingTime = totalTime;
+    let t24 = 1000 * 60 * 24;
+    let t1h = 1000 * 60;
+    let charges = 0;
+
+    var hourlyCharge = 0;
+
+    if (size == 0) {
+      hourlyCharge = 20;
+    } else if (size == 1) {
+      hourlyCharge = 60;
+    } else if (size == 2) {
+      hourlyCharge = 100;
+    }
+
+    // For parking that exceeds 24 hours, every full 24 hour chunk is charged 5,000 pesos regardless of parking slot.
+    if (remainingTime > t24) {
+      let n24 = parseInt(totalTime / t24);
+      charges += n24 * 5000;
+      remainingTime -= n24 * t24;
+    }
+
+    // First 3 hours has a flat rate of 40
+    if (remainingTime > t1h * 3) {
+      remainingTime -= t1h * 3;
+      charges += 40;
+    }
+
+    // The exceeding hourly rate beyond the initial three (3) hours will be charged as follows:
+    // - 20/hour for vehicles parked in SP;
+    // - 60/hour for vehicles parked in MP; and
+    // - 100/hour for vehicles parked in LP
+    if (remainingTime > 0) {
+      let remainingHours = Math.ceil(remainingTime / t1h);
+      charges += remainingHours * hourlyCharge;
+    }
+
+    // return total charges
+    return charges;
+  };
+
+  const confirmButton = async (option) => {
+    if (option === "park") {
+      park(input.vehicleSize, input.entryPoint);
+      setInput({ ...input, steps: 0 });
+    } else if (option === "unpark") {
+      let strLoc = input?.unpark?.trim().split(" ");
+      if (strLoc.length >= 2) {
+        let row = strLoc[0];
+        let col = strLoc[1];
+        await unpark(row, col);
+        setInput({ ...input, steps: 0 });
+        console.log("Vehicle unparked!");
+      }
+    } else {
+    }
     console.log("HERE", parkSlot);
   };
 
-  const handleOnChange = (event) => {
-    setInput({ ...input, [event.target.name]: event.target.value });
-    // event.target.name === "entryPoint" &&
-    //   park(input.vehicleSize, input.entryPoint);
-    console.log("here", input);
+  const handleOnChange = (event, step) => {
+    setInput({
+      ...input,
+      [event.target.name]: event.target.value,
+      steps: step,
+    });
+    console.log(event.target.value);
+  };
+
+  const UnparkScreen = () => {
+    return (
+      <>
+        <h1>Unpark</h1>
+        <label>
+          Location of vehicle to unpark. Seperate by a space [row column]:{" "}
+        </label>
+        <input name="unpark" onChange={handleOnChange} />
+        <button onClick={() => confirmButton("unpark")}>Enter</button>
+      </>
+    );
   };
 
   const InitialScreen = () => {
@@ -162,7 +250,7 @@ const App = () => {
               type="radio"
               name="option"
               value="park"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 1)}
             />
           </div>
           <div
@@ -178,7 +266,7 @@ const App = () => {
               type="radio"
               name="option"
               value="unpark"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 4)}
             />
           </div>
           <div
@@ -194,7 +282,7 @@ const App = () => {
               type="radio"
               name="option"
               value="map"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 5)}
             />
           </div>
           <div
@@ -240,7 +328,7 @@ const App = () => {
               type="radio"
               name="vehicleSize"
               value="0"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 2)}
             />
           </div>
           <div
@@ -256,7 +344,7 @@ const App = () => {
               type="radio"
               name="vehicleSize"
               value="1"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 2)}
             />
           </div>
           <div
@@ -272,7 +360,7 @@ const App = () => {
               type="radio"
               name="vehicleSize"
               value="2"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 2)}
             />
           </div>
           <div
@@ -284,7 +372,13 @@ const App = () => {
             }}
           >
             <label for="age1">Exit</label>
-            <input type="radio" id="age1" name="age" value="30" />
+            <input
+              type="radio"
+              id="age1"
+              name="age"
+              value="30"
+              onClick={(event) => handleOnChange(event, (input.steps -= 1))}
+            />
           </div>
         </div>
       </>
@@ -319,7 +413,7 @@ const App = () => {
               type="radio"
               name="entryPoint"
               value="a"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 3)}
             />
           </div>
           <div
@@ -335,7 +429,7 @@ const App = () => {
               type="radio"
               name="entryPoint"
               value="b"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 3)}
             />
           </div>
           <div
@@ -351,7 +445,7 @@ const App = () => {
               type="radio"
               name="entryPoint"
               value="c"
-              onClick={handleOnChange}
+              onClick={(event) => handleOnChange(event, 3)}
             />
           </div>
           <div
@@ -363,32 +457,65 @@ const App = () => {
             }}
           >
             <label for="age1">Exit</label>
-            <input type="radio" id="age1" name="age" value="30" />
+            <input
+              type="radio"
+              id="age1"
+              name="age"
+              value="30"
+              onClick={(event) => handleOnChange(event, (input.steps -= 1))}
+            />
           </div>
         </div>
       </>
     );
   };
 
+  const ParkScreen = () => {
+    return (
+      <>
+        <h1>"Successfully Parked!"</h1>
+        <button onClick={() => confirmButton("park")}>Enter</button>
+      </>
+    );
+  };
+
+  const MapScreen = () => {
+    return (
+      <>
+        <h1>Map</h1>
+      </>
+    );
+  };
+
   return (
     <div className="App">
-      {!input.option ? (
+      {input.steps === 0 ? (
         <InitialScreen />
-      ) : input.option && !input.vehicleSize ? (
+      ) : input.steps === 1 ? (
         <VehicleSizeInput />
-      ) : input.option && input.vehicleSize && !input.entryPoint ? (
+      ) : input.steps === 2 ? (
         <EntranceInput />
-      ) : input.option && input.vehicleSize && input.entryPoint ? (
+      ) : input.steps === 3 ? (
+        <ParkScreen />
+      ) : input.steps === 4 ? (
         <>
-          <h1>"Successfully Parked!"</h1>
-          <button onClick={confirmButton}>Enter</button>
+          <h1>Unpark</h1>
+          <label>
+            Location of vehicle to unpark. Seperate by a space [row column]:{" "}
+          </label>
+          <input
+            name="unpark"
+            key="random1"
+            value={input.unpark}
+            onChange={(event) => handleOnChange(event, 4)}
+          />
+          <button onClick={() => confirmButton("unpark")}>Enter</button>
         </>
+      ) : input.steps === 5 ? (
+        <MapScreen />
       ) : (
         <></>
       )}
-      {/* <input onChange={handleOnChange}></input>
-      <button onClick={confirmButton}>Enter</button>
-      <p>{input}</p> */}
     </div>
   );
 };
